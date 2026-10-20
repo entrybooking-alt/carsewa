@@ -42,7 +42,7 @@ form .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 #dr{position:fixed;inset:0;background:rgba(30,20,10,.45);display:none;align-items:flex-end;justify-content:center;z-index:9}
 #dr.on{display:flex}#dr .sheet{background:var(--bg);width:100%;max-width:560px;max-height:88vh;overflow:auto;border-radius:20px 20px 0 0;padding:18px}
 .x{float:right;border:0;background:none;font-size:24px;cursor:pointer;color:var(--mut)}
-.hide{display:none}.sl{display:inline-block;margin-left:8px;background:rgba(255,255,255,.2);color:#fff;text-decoration:none;padding:3px 10px;border-radius:99px;font-weight:600}.more{width:100%;margin-top:8px;padding:10px;border:1px dashed var(--sa);background:none;color:#8a3d12;border-radius:10px;font:600 14px inherit;cursor:pointer}
+.hide{display:none}.sl{display:inline-block;margin-left:8px;background:rgba(255,255,255,.2);color:#fff;text-decoration:none;padding:3px 10px;border-radius:99px;font-weight:600}.sl.hide{display:none}.more{width:100%;margin-top:8px;padding:10px;border:1px dashed var(--sa);background:none;color:#8a3d12;border-radius:10px;font:600 14px inherit;cursor:pointer}
 textarea{resize:vertical}
 @media(max-width:720px){input,select,textarea{font-size:16px}header{padding:66px 14px 50px}h1{font-size:19px}
 .wrap{padding:0 12px}.card{padding:14px 12px}.kpi b{font-size:22px}
@@ -109,10 +109,19 @@ const esc = s => String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">"
 const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 function show(v){window.scrollTo(0,0);$("dash").classList.toggle("hide",v!=="dash");$("add").classList.toggle("hide",v!=="add");$("n1").classList.toggle("on",v==="dash");$("n2").classList.toggle("on",v==="add");}
 
+function normDate(v){
+  if(v===""||v==null)return "";
+  if(typeof v==="number"){const d=new Date(Math.round((v-25569)*864e5));return isNaN(d)?"":d.toISOString().slice(0,10);}
+  v=String(v).trim();
+  if(/^\d{4}-\d{2}-\d{2}$/.test(v))return v;
+  let m=v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/); if(m)return m[3]+"-"+m[2].padStart(2,"0")+"-"+m[1].padStart(2,"0");
+  const d=new Date(v); if(isNaN(d))return "";
+  return d.toLocaleDateString("en-CA",{timeZone:"Asia/Kolkata"});
+}
 async function load(){
   if(API_URL){ try{ const r=await fetch(API_URL+"?action=all"); DB=await r.json(); }catch(e){ DB=SEED; $("dash").insertAdjacentHTML("afterbegin",'<div class="msg err">Server se data nahi aaya. Internet check karo.</div>'); } }
   else { try{ const s=localStorage.getItem("carsewa_demo"); DB=s?JSON.parse(s):JSON.parse(JSON.stringify(SEED)); }catch(e){ DB=JSON.parse(JSON.stringify(SEED)); } }
-  DB.trips.forEach(t=>{t.from_=t.from_||t.from||"";});
+  DB.trips.forEach(t=>{t.from_=t.from_||t.from||"";t.date=normDate(t.date);["timing","guest","paid","note","remarks","name","dept","to"].forEach(k=>{if(t[k]==null)t[k]="";t[k]=String(t[k]).replace(/^1899-.*$/,"")});});
   fillForm(); render();
 }
 function dd(s){return s?new Date(s+"T00:00:00"):null}
